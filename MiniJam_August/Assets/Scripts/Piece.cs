@@ -8,6 +8,8 @@ public class Piece : MonoBehaviour
     float deltaX = 1f;
     public bool followingMouse = false;
 
+    public Sprite bombSprite;
+    Sprite normal;
     SpriteRenderer sr;
 
     public int currentColor;
@@ -16,13 +18,14 @@ public class Piece : MonoBehaviour
     void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
+        normal = sr.sprite;
     }
     public void OnMouseDown()
     {
         if (!GameController.controller.canPlace || placed) return;
         if (GameController.controller.placingPieces)
         {
-            Pickup();
+           if (!placed) Pickup();
         }
         else
         {
@@ -36,13 +39,14 @@ public class Piece : MonoBehaviour
         if (GameController.controller.placingPieces)
         {
             Place(transform.position);
+
         }
         else
         {
             //Place a piece that destroys everything it touches and possible scores points
             Debug.Log("Trying to destroy blocks!");
             //Place(transform.position);
-            GameController.controller.DestroyPieces(currentColor);
+            GameController.controller.DestroyPieces(GetClosest(transform.position));
             AudioController.controller.PlaySound(SoundType.BadMove);
             gameObject.SetActive(false);
             GridHighlighter.controller.hasPiece = false;
@@ -67,6 +71,15 @@ public class Piece : MonoBehaviour
         {
             transform.position = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
         }
+
+        if (GameController.controller.placingPieces)
+        {
+            sr.sprite = normal;
+        }
+        else
+        {
+          if (!placed)  sr.sprite = bombSprite;
+        }
     }
 
     public void Pickup()
@@ -78,14 +91,20 @@ public class Piece : MonoBehaviour
 
     public void Place(Vector2 position)
     {
+        if (GameController.controller.HasPiece(GetClosest(transform.position)))
+        {
+            Debug.Log("Can't place here!");
+            return;
+        }
 
+        transform.position = GetClosest(position, deltaY);
+        placed = true;
         tag = "Untagged";
         GameController.controller.currentPiece = null;
         AudioController.controller.PlaySound(SoundType.Place);
         //if (!GameController.controller.canIEvenPlace) return;
         followingMouse = false;
         GridHighlighter.controller.hasPiece = false;
-        transform.position = GetClosest(position, deltaY);
 
         //if we've placed and there is a built up piece ready, give it to me now
         if (GameController.controller.percent >= 1)
@@ -93,6 +112,8 @@ public class Piece : MonoBehaviour
             GameController.controller.OverrideSendPiece();
         }
         GameController.controller.percent = 0;
+
+        GameController.controller.AddToMatches(new Match(transform.position, this, currentColor));
     }
 
     public static Vector2 GetClosest(Vector2 position, float deltaY = 0.84f)

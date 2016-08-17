@@ -72,11 +72,11 @@ public class GridHighlighter : MonoBehaviour
 
         if (add)
         {
-            Debug.Log("Haven't found an inactive piece");
             pieces.Add(Instantiate(piecePrefab));
             pieces[pieces.Count - 1].GetComponent<Piece>().Setup(true, colours[colorIndex], colorIndex);
             GameController.controller.currentPiece = pieces[pieces.Count - 1];
             hasPiece = true;
         }
+
     }
 }
